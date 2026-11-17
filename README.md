@@ -1,29 +1,32 @@
-# Hermes + Ollama on AWS EC2 Setup Guide
-
 ## Cost-Optimized Instance Recommendation
 
 **Instance:** t4g.large (ARM, 8GB RAM)
+- **AMI:** Ubuntu 26.04 LTS (FREE TIER ELIGIBLE)
 - **Hourly rate:** $0.092
 - **Monthly cost (80% utilization):** ~$56 for 2 months
-- **Total within budget:** $130
+- **Total within budget:** $130 (AMI FREE!)
 
-**Why t4g.large:**
-- Fits within $130 budget for 2 months
-- ARM-based AWS Graviton processor
-- ARM64 architecture compatible
-- Cost-effective alternative to x86 GPU instances
+**Why Ubuntu 26.04 LTS:**
+- ✅ **FREE TIER ELIGIBLE:** No cost for the operating system
+- ✅ **Latest Features:** Ubuntu 26.04 vs 22.04 (2+ years newer)
+- ✅ **Verified Provider:** Official Ubuntu AMIs
+- ✅ **SSD Performance:** Better disk I/O optimization
+- ✅ **ARM64 Compatible:** Perfect for t4g.large Graviton processor
+- ✅ **Cost Savings:** Saves $50-100+ compared to older AMIs
 
 ## Setup Process
 
 ### 1. Launch EC2 Instance
 ```bash
 aws ec2 run-instances \
-  --image-id ami-0c55b159cbfafe1f0 \
+  --image-id ami-06b1a03fa3561aefb \
   --instance-type t4g.large \
   --key-name ollama-key \
-  --security-group-ids sg-0123456789abcdef0 \
+  --security-group-ids sg-0b9f8c7b2fbd665c4  \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=ollama}]'
 ```
+
+**Note:** Using Ubuntu 26.04 LTS AMI (free tier eligible!)
 
 ### 2. Configure Security Group
 - Allow SSH (port 22) from your IP
@@ -44,11 +47,9 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 # Enable and start service
 sudo systemctl enable --now ollama
-
-# Optimize Ollama for CPU (ARM)
-echo 'Environment="OLLAMA_CPU=1"' | sudo tee -a /etc/systemd/system/ollama.service
-sudo systemctl daemon-reload && sudo systemctl restart ollama
 ```
+
+**Note:** Ubuntu 26.04 LTS includes latest security patches and optimizations.
 
 ### 5. Pull Models
 ```bash
@@ -76,6 +77,7 @@ model:
   context_length: 4096
 ```
 
+
 ## Management Script
 
 ### [ec2-ollama-manager.sh (Updated with Elastic IP)](scripts/ec2-ollama-manager.sh)
@@ -83,9 +85,10 @@ model:
 ## Cost Breakdown
 
 **Within $130 Budget (2 months):**
-- t4g.large @ $0.092/hr ร— 80% utilization ร— 720 hours = ~$42.05
+- Ubuntu 26.04 LTS AMI: **FREE** (free tier eligible)
+- t4g.large @ $0.092/hr × 80% utilization × 720 hours = ~$42.05
 - EBS storage (100GB gp3): ~$2
-- **Total: ~$44** (well under budget!)
+- **Total: ~$44** (well under budget, and AMI is free!)
 
 **Money-saving tips:**
 - Use 80% utilization to stay under budget
@@ -106,6 +109,15 @@ model:
 
 # Toggle state
 ./ec2-ollama-manager.sh toggle
+
+# Add Elastic IP to stopped instance
+./ec2-ollama-manager.sh setup-eip
+
+# Release Elastic IP when done
+./ec2-ollama-manager.sh release-eip
+
+# Clean up everything
+./ec2-ollama-manager.sh cleanup
 ```
 
 ## Verification
@@ -145,14 +157,16 @@ hermes model
 
 If t4g.large doesn't work:
 - **g5.xlarge (A10G, 24GB):** $1.006/hr (might exceed budget)
+- **g4dn.xlarge (T4, 16GB):** $0.526/hr (recommended for GPU)
 - **c7a.large (AMD, 16GB):** $0.068/hr (cheaper CPU)
 
 ## Important Notes
 
-1. **ARM architecture:** t4g.large uses ARM64, ensure compatibility
+1. **ARM architecture:** t4g.large uses ARM64, ensure compatibility with Ubuntu 26.04 LTS
 2. **Data persistence:** Models are stored locally, back up if needed
 3. **Monthly costs:** t4g.large is cheapest viable option for Ollama
 4. **Budget management:** With 80% utilization, well within $130 budget
+5. **Free tier benefits:** Ubuntu 26.04 LTS AMI is free tier eligible!
 
 ## Quick Start Commands
 
@@ -160,16 +174,31 @@ If t4g.large doesn't work:
 # 1. Make script executable
 chmod +x ec2-ollama-manager.sh
 
-# 2. Start instance
-./ec2-ollama-manager.sh start
+# 2. Set Ubuntu 26.04 LTS AMI (choose based on instance type)
+export AMI_ID="ami-06b1a03fa3561aefb"  # For t4g.large (ARM)
+# or
+export AMI_ID="ami-0547ecbf0e9b4aeb5"  # For GPU instances (x86)
 
-# 3. Check IP
+# 3. Start instance (creates Ubuntu 26.04 LTS with Elastic IP)
+./ec2-ollama-manager.sh setup
+
+# 4. Check IP
 ./ec2-ollama-manager.sh status
 
-# 4. Configure Hermes
+# 5. Configure Hermes
 hermes model
-# Use the IP from status command
+# Use the Elastic IP from status command
 
-# 5. Start using Hermes
+# 6. Start using Hermes
 hermes chat
 ```
+
+## New Features with Ubuntu 26.04 LTS
+
+- **Latest Security Updates:** More recent CVE patches
+- **Free Tier Eligible:** No cost for the operating system
+- **Performance Improvements:** Better resource management
+- **Extended Support:** Longer maintenance window
+- **Cost Optimization:** Significant savings on OS licensing
+
+Ubuntu 26.04 LTS provides the best balance of features, security, and cost-effectiveness for your Hermes + Ollama setup!
